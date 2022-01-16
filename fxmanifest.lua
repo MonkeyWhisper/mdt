@@ -18,6 +18,7 @@ files {
 
 server_scripts {
     "sv_mdt.lua",
+    '@oxmysql/lib/MySQL.lua',
     "sv_vehcolors.lua"
 }
 
