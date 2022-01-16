@@ -6,11 +6,11 @@ AddEventHandler("mdt:hotKeyOpen", function()
 	local usource = source
     local xPlayer = QBCore.Functions.GetPlayer(usource)
     if xPlayer.PlayerData.job.name == 'police' then
-    	exports.oxmysql:fetch("SELECT * FROM (SELECT * FROM `mdt_reports` ORDER BY `id` DESC LIMIT 3) sub ORDER BY `id` DESC", {}, function(reports)
+    	MySQL.Async.fetchAll("SELECT * FROM (SELECT * FROM `mdt_reports` ORDER BY `id` DESC LIMIT 3) sub ORDER BY `id` DESC", {}, function(reports)
     		for r = 1, #reports do
     			reports[r].charges = json.decode(reports[r].charges)
     		end
-    		exports.oxmysql:fetch("SELECT * FROM (SELECT * FROM `mdt_warrants` ORDER BY `id` DESC LIMIT 3) sub ORDER BY `id` DESC", {}, function(warrants)
+    		MySQL.Async.fetchAll("SELECT * FROM (SELECT * FROM `mdt_warrants` ORDER BY `id` DESC LIMIT 3) sub ORDER BY `id` DESC", {}, function(warrants)
     			for w = 1, #warrants do
     				warrants[w].charges = json.decode(warrants[w].charges)
     			end
@@ -25,7 +25,7 @@ RegisterServerEvent("mdt:getOffensesAndOfficer")
 AddEventHandler("mdt:getOffensesAndOfficer", function()
 	local usource = source
 	local charges = {}
-	exports.oxmysql:fetch('SELECT * FROM fine_types', {}, function(fines)
+	MySQL.Async.fetchAll('SELECT * FROM fine_types', {}, function(fines)
 		for j = 1, #fines do
 			if fines[j].category == 0 or fines[j].category == 1 or fines[j].category == 2 or fines[j].category == 3 then
 				table.insert(charges, fines[j])
@@ -42,7 +42,7 @@ RegisterServerEvent("mdt:performOffenderSearch")
 AddEventHandler("mdt:performOffenderSearch", function(query)
 	local usource = source
 	local matches = {}
-	exports.oxmysql:fetch("SELECT * FROM `players` WHERE `charinfo` LIKE ?", {string.lower('%'..query..'%')}, function(result) -- % wildcard, needed to search for all alike results
+	MySQL.Async.fetchAll("SELECT * FROM `players` WHERE `charinfo` LIKE ?", {string.lower('%'..query..'%')}, function(result) -- % wildcard, needed to search for all alike results
 
 		for index, data in ipairs(result) do
 			if data.charinfo then
@@ -71,7 +71,7 @@ AddEventHandler("mdt:getOffenderDetails", function(offender)
 	local usource = source
 	GetLicenses(offender.citizenid, function(licenses) offender.licenses = licenses end)
 	while offender.licenses == nil do Citizen.Wait(0) end
-    exports.oxmysql:fetch('SELECT * FROM `user_mdt` WHERE `char_id` = ?', {offender.id}, function(result)
+    MySQL.Async.fetchAll('SELECT * FROM `user_mdt` WHERE `char_id` = ?', {offender.id}, function(result)
 
         offender.notes = ""
         offender.mugshot_url = ""
@@ -82,7 +82,7 @@ AddEventHandler("mdt:getOffenderDetails", function(offender)
             offender.bail = result[1].bail
         end
 
-        exports.oxmysql:fetch('SELECT * FROM `user_convictions` WHERE `char_id` = ?', {offender.id}, function(convictions)
+        MySQL.Async.fetchAll('SELECT * FROM `user_convictions` WHERE `char_id` = ?', {offender.id}, function(convictions)
 
             if convictions[1] then
                 offender.convictions = {}
@@ -92,13 +92,13 @@ AddEventHandler("mdt:getOffenderDetails", function(offender)
                 end
             end
 
-            exports.oxmysql:fetch('SELECT * FROM `mdt_warrants` WHERE `char_id` = ?', {offender.id}, function(warrants)
+            MySQL.Async.fetchAll('SELECT * FROM `mdt_warrants` WHERE `char_id` = ?', {offender.id}, function(warrants)
 
                 if warrants[1] then
                     offender.haswarrant = true
                 end
 
-				exports.oxmysql:fetch('SELECT * FROM `player_vehicles` WHERE `citizenid` = ?', {offender.citizenid}, function(vehicles)
+				MySQL.Async.fetchAll('SELECT * FROM `player_vehicles` WHERE `citizenid` = ?', {offender.citizenid}, function(vehicles)
 					for i = 1, #vehicles do
 						vehicles[i].model = vehicles[i].vehicle
 						if vehicles[i].mods then
@@ -128,7 +128,7 @@ end)
 RegisterServerEvent("mdt:getOffenderDetailsById")
 AddEventHandler("mdt:getOffenderDetailsById", function(char_id)
     local usource = source
-    exports.oxmysql:fetch('SELECT * FROM `players` WHERE `id` = ?', {char_id}, function(result)
+    MySQL.Async.fetchAll('SELECT * FROM `players` WHERE `id` = ?', {char_id}, function(result)
 		local charinfo = json.decode(result[1].charinfo)
         local offender = result[1]
 
@@ -141,7 +141,7 @@ AddEventHandler("mdt:getOffenderDetailsById", function(char_id)
         GetLicenses(offender.citizenid, function(licenses) offender.licenses = licenses end)
         while offender.licenses == nil do Citizen.Wait(0) end
 
-        exports.oxmysql:fetch('SELECT * FROM `user_mdt` WHERE `char_id` = ?', {offender.id}, function(result)
+        MySQL.Async.fetchAll('SELECT * FROM `user_mdt` WHERE `char_id` = ?', {offender.id}, function(result)
 
             offender.notes = ""
             offender.mugshot_url = ""
@@ -152,7 +152,7 @@ AddEventHandler("mdt:getOffenderDetailsById", function(char_id)
                 offender.bail = result[1].bail
             end
 
-            exports.oxmysql:fetch('SELECT * FROM `user_convictions` WHERE `char_id` = ?', {offender.id}, function(convictions) 
+            MySQL.Async.fetchAll('SELECT * FROM `user_convictions` WHERE `char_id` = ?', {offender.id}, function(convictions) 
 
                 if convictions[1] then
                     offender.convictions = {}
@@ -162,13 +162,13 @@ AddEventHandler("mdt:getOffenderDetailsById", function(char_id)
                     end
                 end
 
-                exports.oxmysql:fetch('SELECT * FROM `mdt_warrants` WHERE `char_id` = ?', {offender.id}, function(warrants)
+                MySQL.Async.fetchAll('SELECT * FROM `mdt_warrants` WHERE `char_id` = ?', {offender.id}, function(warrants)
                     
                     if warrants[1] then
                         offender.haswarrant = true
                     end
 
-                    exports.oxmysql:fetch('SELECT * FROM `player_vehicles` WHERE `citizenid` = ?', {offender.citizenid}, function(vehicles)
+                    MySQL.Async.fetchAll('SELECT * FROM `player_vehicles` WHERE `citizenid` = ?', {offender.citizenid}, function(vehicles)
                         for i = 1, #vehicles do
                             vehicles[i].model = vehicles[i].vehicle
                             if vehicles[i].mods then
@@ -201,11 +201,11 @@ end)
 RegisterServerEvent("mdt:saveOffenderChanges")
 AddEventHandler("mdt:saveOffenderChanges", function(id, changes, identifier)
 	local usource = source
-	exports.oxmysql:fetch('SELECT * FROM `user_mdt` WHERE `char_id` = ?', {id}, function(result)
+	MySQL.Async.fetchAll('SELECT * FROM `user_mdt` WHERE `char_id` = ?', {id}, function(result)
 		if result[1] then
-			exports.oxmysql:execute('UPDATE `user_mdt` SET `notes` = ?, `mugshot_url` = ?, `bail` = ? WHERE `char_id` = ?', {changes.notes, changes.mugshot_url, changes.bail, id})
+			MySQL.Async.execute('UPDATE `user_mdt` SET `notes` = ?, `mugshot_url` = ?, `bail` = ? WHERE `char_id` = ?', {changes.notes, changes.mugshot_url, changes.bail, id})
 		else
-			exports.oxmysql:insert('INSERT INTO `user_mdt` (`char_id`, `notes`, `mugshot_url`, `bail`) VALUES (?, ?, ?, ?)', {id, changes.notes, changes.mugshot_url, changes.bail})
+			MySQL.Async.insert('INSERT INTO `user_mdt` (`char_id`, `notes`, `mugshot_url`, `bail`) VALUES (?, ?, ?, ?)', {id, changes.notes, changes.mugshot_url, changes.bail})
 		end
 		if changes.licenses_removed ~= nil then
 			local player = QBCore.Functions.GetPlayer(usource)
@@ -218,12 +218,12 @@ AddEventHandler("mdt:saveOffenderChanges", function(id, changes, identifier)
 
 		if changes.convictions ~= nil then
 			for conviction, amount in pairs(changes.convictions) do	
-				exports.oxmysql:execute('UPDATE `user_convictions` SET `count` = ? WHERE `char_id` = ? AND `offense` = ?', {id, amount, conviction})
+				MySQL.Async.execute('UPDATE `user_convictions` SET `count` = ? WHERE `char_id` = ? AND `offense` = ?', {id, amount, conviction})
 			end
 		end
 
 		for i = 1, #changes.convictions_removed do
-			exports.oxmysql:execute('DELETE FROM `user_convictions` WHERE `char_id` = ? AND `offense` = ?', {id, changes.convictions_removed[i]})
+			MySQL.Async.execute('DELETE FROM `user_convictions` WHERE `char_id` = ? AND `offense` = ?', {id, changes.convictions_removed[i]})
 		end
 
 		TriggerClientEvent("mdt:sendNotification", usource, "Offender changes have been saved.")
@@ -232,13 +232,13 @@ end)
 
 RegisterServerEvent("mdt:saveReportChanges")
 AddEventHandler("mdt:saveReportChanges", function(data)
-	exports.oxmysql:execute('UPDATE `mdt_reports` SET `title` = ?, `incident` = ? WHERE `id` = ?', {data.id, data.title, data.incident})
+	MySQL.Async.execute('UPDATE `mdt_reports` SET `title` = ?, `incident` = ? WHERE `id` = ?', {data.id, data.title, data.incident})
 	TriggerClientEvent("mdt:sendNotification", source, "Report changes have been saved.")
 end)
 
 RegisterServerEvent("mdt:deleteReport")
 AddEventHandler("mdt:deleteReport", function(id)
-	exports.oxmysql:execute('DELETE FROM `mdt_reports` WHERE `id` = ?', {id})
+	MySQL.Async.execute('DELETE FROM `mdt_reports` WHERE `id` = ?', {id})
 	TriggerClientEvent("mdt:sendNotification", source, "Report has been successfully deleted.")
 end)
 
@@ -248,17 +248,17 @@ AddEventHandler("mdt:submitNewReport", function(data)
 	local author = GetCharacterName(source)
 	charges = json.encode(data.charges)
 	data.date = os.date('%m-%d-%Y %H:%M:%S', os.time())
-	exports.oxmysql:insert('INSERT INTO `mdt_reports` (`char_id`, `title`, `incident`, `charges`, `author`, `name`, `date`) VALUES (?, ?, ?, ?, ?, ?, ?)', {data.char_id, data.title, data.incident, charges, author, data.name, data.date,}, function(id)
+	MySQL.Async.insert('INSERT INTO `mdt_reports` (`char_id`, `title`, `incident`, `charges`, `author`, `name`, `date`) VALUES (?, ?, ?, ?, ?, ?, ?)', {data.char_id, data.title, data.incident, charges, author, data.name, data.date,}, function(id)
 		TriggerEvent("mdt:getReportDetailsById", id, usource)
 		TriggerClientEvent("mdt:sendNotification", usource, "A new report has been submitted.")
 	end)
 
 	for offense, count in pairs(data.charges) do
-		exports.oxmysql:fetch('SELECT * FROM `user_convictions` WHERE `offense` = ? AND `char_id` = ?', {offense, data.char_id}, function(result)
+		MySQL.Async.fetchAll('SELECT * FROM `user_convictions` WHERE `offense` = ? AND `char_id` = ?', {offense, data.char_id}, function(result)
 			if result[1] then
-				exports.oxmysql:execute('UPDATE `user_convictions` SET `count` = ? WHERE `offense` = ? AND `char_id` = ?', {data.char_id, offense, count + 1})
+				MySQL.Async.execute('UPDATE `user_convictions` SET `count` = ? WHERE `offense` = ? AND `char_id` = ?', {data.char_id, offense, count + 1})
 			else
-				exports.oxmysql:insert('INSERT INTO `user_convictions` (`char_id`, `offense`, `count`) VALUES (?, ?, ?)', {data.char_id, offense, count})
+				MySQL.Async.insert('INSERT INTO `user_convictions` (`char_id`, `offense`, `count`) VALUES (?, ?, ?)', {data.char_id, offense, count})
 			end
 		end)
 	end
@@ -268,7 +268,7 @@ RegisterServerEvent("mdt:performReportSearch")
 AddEventHandler("mdt:performReportSearch", function(query)
 	local usource = source
 	local matches = {}
-	exports.oxmysql:fetch("SELECT * FROM `mdt_reports` WHERE `id` LIKE :test OR LOWER(`title`) LIKE :test OR LOWER(`name`) LIKE :test OR LOWER(`author`) LIKE :test or LOWER(`charges`) LIKE :test", {
+	MySQL.Async.fetchAll("SELECT * FROM `mdt_reports` WHERE `id` LIKE :test OR LOWER(`title`) LIKE :test OR LOWER(`name`) LIKE :test OR LOWER(`author`) LIKE :test or LOWER(`charges`) LIKE :test", {
 		test = string.lower('%'..query..'%')
 	}, function(result) -- % wildcard, needed to search for all alike results
 
@@ -285,7 +285,7 @@ RegisterServerEvent("mdt:performVehicleSearch")
 AddEventHandler("mdt:performVehicleSearch", function(query)
 	local usource = source
 	local matches = {}
-	exports.oxmysql:fetch("SELECT * FROM `player_vehicles` WHERE LOWER(`plate`) LIKE ?", {string.lower('%'..query..'%')}, function(result) -- % wildcard, needed to search for all alike results
+	MySQL.Async.fetchAll("SELECT * FROM `player_vehicles` WHERE LOWER(`plate`) LIKE ?", {string.lower('%'..query..'%')}, function(result) -- % wildcard, needed to search for all alike results
 		for index, data in ipairs(result) do
 			data.model = data.vehicle
 			if data.mods ~= nil then
@@ -307,15 +307,15 @@ AddEventHandler("mdt:performVehicleSearchInFront", function(query)
 	local usource = source
 	local xPlayer = QBCore.Functions.GetPlayer(usource)
     if xPlayer.PlayerData.job.name == 'police' then
-    	exports.oxmysql:fetch("SELECT * FROM (SELECT * FROM `mdt_reports` ORDER BY `id` DESC LIMIT 3) sub ORDER BY `id` DESC", {}, function(reports)
+    	MySQL.Async.fetchAll("SELECT * FROM (SELECT * FROM `mdt_reports` ORDER BY `id` DESC LIMIT 3) sub ORDER BY `id` DESC", {}, function(reports)
     		for r = 1, #reports do
     			reports[r].charges = json.decode(reports[r].charges)
     		end
-    		exports.oxmysql:fetch("SELECT * FROM (SELECT * FROM `mdt_warrants` ORDER BY `id` DESC LIMIT 3) sub ORDER BY `id` DESC", {}, function(warrants)
+    		MySQL.Async.fetchAll("SELECT * FROM (SELECT * FROM `mdt_warrants` ORDER BY `id` DESC LIMIT 3) sub ORDER BY `id` DESC", {}, function(warrants)
     			for w = 1, #warrants do
     				warrants[w].charges = json.decode(warrants[w].charges)
     			end
-    			exports.oxmysql:fetch("SELECT * FROM `player_vehicles` WHERE `plate` = ?", {query}, function(result)
+    			MySQL.Async.fetchAll("SELECT * FROM `player_vehicles` WHERE `plate` = ?", {query}, function(result)
 					local officer = GetCharacterName(usource)
     				TriggerClientEvent('mdt:toggleVisibilty', usource, reports, warrants, officer, xPlayer.PlayerData.job.name)
 					TriggerClientEvent("mdt:returnVehicleSearchInFront", usource, result, query)
@@ -328,7 +328,7 @@ end)
 RegisterServerEvent("mdt:getVehicle")
 AddEventHandler("mdt:getVehicle", function(vehicle)
 	local usource = source
-    exports.oxmysql:fetch("SELECT * FROM `players` WHERE `citizenid` = ?", {vehicle.citizenid}, function(result)
+    MySQL.Async.fetchAll("SELECT * FROM `players` WHERE `citizenid` = ?", {vehicle.citizenid}, function(result)
 
 		if result[1] then
 			local player = json.decode(result[1].charinfo)
@@ -336,7 +336,7 @@ AddEventHandler("mdt:getVehicle", function(vehicle)
 			vehicle.owner_id = result[1].id
 		end
 
-        exports.oxmysql:fetch('SELECT * FROM `vehicle_mdt` WHERE `plate` = ?', {vehicle.plate}, function(data)
+        MySQL.Async.fetchAll('SELECT * FROM `vehicle_mdt` WHERE `plate` = ?', {vehicle.plate}, function(data)
 
             if data[1] then
                 if data[1].stolen == 1 then vehicle.stolen = true else vehicle.stolen = false end
@@ -346,13 +346,13 @@ AddEventHandler("mdt:getVehicle", function(vehicle)
                 vehicle.notes = ''
             end
 
-            exports.oxmysql:fetch('SELECT * FROM `mdt_warrants` WHERE `char_id` = ?', {vehicle.owner_id}, function(warrants)
+            MySQL.Async.fetchAll('SELECT * FROM `mdt_warrants` WHERE `char_id` = ?', {vehicle.owner_id}, function(warrants)
 
                 if warrants[1] then
                     vehicle.haswarrant = true
                 end
 
-                exports.oxmysql:fetch('SELECT `bail` FROM user_mdt WHERE `char_id` = ?', {vehicle.owner_id}, function(bail)
+                MySQL.Async.fetchAll('SELECT `bail` FROM user_mdt WHERE `char_id` = ?', {vehicle.owner_id}, function(bail)
 
                     if bail and bail[1] and bail[1].bail == 1 then
                         vehicle.bail = true
@@ -370,7 +370,7 @@ end)
 RegisterServerEvent("mdt:getWarrants")
 AddEventHandler("mdt:getWarrants", function()
 	local usource = source
-	exports.oxmysql:fetch("SELECT * FROM `mdt_warrants`", {}, function(warrants)
+	MySQL.Async.fetchAll("SELECT * FROM `mdt_warrants`", {}, function(warrants)
 		for i = 1, #warrants do
 			warrants[i].expire_time = ""
 			warrants[i].charges = json.decode(warrants[i].charges)
@@ -385,7 +385,7 @@ AddEventHandler("mdt:submitNewWarrant", function(data)
 	data.charges = json.encode(data.charges)
 	data.author = GetCharacterName(source)
 	data.date = os.date('%m-%d-%Y %H:%M:%S', os.time())
-	exports.oxmysql:insert('INSERT INTO `mdt_warrants` (`name`, `char_id`, `report_id`, `report_title`, `charges`, `date`, `expire`, `notes`, `author`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', {data.name, data.char_id, data.report_id, data.report_title, data.charges, data.date, data.expire, data.notes, data.author}, function()
+	MySQL.Async.insert('INSERT INTO `mdt_warrants` (`name`, `char_id`, `report_id`, `report_title`, `charges`, `date`, `expire`, `notes`, `author`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', {data.name, data.char_id, data.report_id, data.report_title, data.charges, data.date, data.expire, data.notes, data.author}, function()
 		TriggerClientEvent("mdt:completedWarrantAction", usource)
 		TriggerClientEvent("mdt:sendNotification", usource, "A new warrant has been created.")
 	end)
@@ -394,7 +394,7 @@ end)
 RegisterServerEvent("mdt:deleteWarrant")
 AddEventHandler("mdt:deleteWarrant", function(id)
 	local usource = source
-	exports.oxmysql:execute('DELETE FROM `mdt_warrants` WHERE `id` = ?', {id}, function()
+	MySQL.Async.execute('DELETE FROM `mdt_warrants` WHERE `id` = ?', {id}, function()
 		TriggerClientEvent("mdt:completedWarrantAction", usource)
 	end)
 	TriggerClientEvent("mdt:sendNotification", usource, "Warrant has been successfully deleted.")
@@ -404,7 +404,7 @@ RegisterServerEvent("mdt:getReportDetailsById")
 AddEventHandler("mdt:getReportDetailsById", function(query, _source)
 	if _source then source = _source end
 	local usource = source
-	exports.oxmysql:fetch("SELECT * FROM `mdt_reports` WHERE `id` = ?", {query}, function(result)
+	MySQL.Async.fetchAll("SELECT * FROM `mdt_reports` WHERE `id` = ?", {query}, function(result)
 		if result and result[1] then
 			result[1].charges = json.decode(result[1].charges)
 			TriggerClientEvent("mdt:returnReportDetails", usource, result[1])
@@ -494,11 +494,11 @@ RegisterServerEvent("mdt:saveVehicleChanges")
 AddEventHandler("mdt:saveVehicleChanges", function(data)
 	if data.stolen then data.stolen = 1 else data.stolen = 0 end
 	local usource = source
-	exports.oxmysql:fetch('SELECT * FROM `vehicle_mdt` WHERE `plate` = ?', {data.plate}, function(result)
+	MySQL.Async.fetchAll('SELECT * FROM `vehicle_mdt` WHERE `plate` = ?', {data.plate}, function(result)
 		if result[1] then
-			exports.oxmysql:execute('UPDATE `vehicle_mdt` SET `stolen` = ?, `notes` = ? WHERE `plate` = ?', {data.plate, data.stolen, data.notes})
+			MySQL.Async.execute('UPDATE `vehicle_mdt` SET `stolen` = ?, `notes` = ? WHERE `plate` = ?', {data.plate, data.stolen, data.notes})
 		else
-			exports.oxmysql:insert('INSERT INTO `vehicle_mdt` (`plate`, `stolen`, `notes`) VALUES (?, ?, ?)', {data.plate, data.stolen, data.notes})
+			MySQL.Async.insert('INSERT INTO `vehicle_mdt` (`plate`, `stolen`, `notes`) VALUES (?, ?, ?)', {data.plate, data.stolen, data.notes})
 		end
 		
 		TriggerClientEvent("mdt:sendNotification", usource, "Vehicle changes have been saved.")
